@@ -1,0 +1,40 @@
+pipeline {
+  agent {
+    docker {
+      label 'sharelatex'
+      image "$DOCKER_REGISTRY/node:12.18.3"
+    }
+  }
+  stages {
+    stage('Install dependencies') {
+      environment {
+        HOME = '/tmp'
+      }
+      steps {
+        sh 'npm ci'
+      }
+    }
+    stage('Build') {
+      steps {
+        sh 'make minimal -j2'
+      }
+    }
+    stage('Archive') {
+      steps {
+        sh 'make clean_builds'
+        sh 'make archive'
+        archiveArtifacts(artifacts: 'builds/*.tar.gz')
+      }
+    }
+    stage('Release Info') {
+      steps {
+        sh 'make package_url'
+      }
+    }
+  }
+  post {
+    cleanup {
+      sh 'make clean_ci'
+    }
+  }
+}

@@ -41,4 +41,38 @@ ace.tgz: build
 	cp LICENSE ace-`./version.js`/
 	tar cvfz ace-`./version.js`.tgz ace-`./version.js`/
 
+SHA=$(shell git rev-parse HEAD)
+VERSION=$(shell ./version.js)
+RELEASE=$(VERSION)-$(SHA)
+TAR=builds/$(RELEASE).tar.gz
+
+package_url:
+	@echo $(HUDSON_URL)artifacts/ace/$(BRANCH_NAME)/$(BUILD_ID)/$(TAR)
+
+minimal: build/loose_files
+build/loose_files:
+	mkdir -p build/
+	echo $(RELEASE) > build/.release
+	cp build_support/package.json build/
+	cp LICENSE build/
+
+minimal: build/src-noconflict
+build/src-noconflict:
+	./Makefile.dryice.js --nc
+
+minimal: build/src-min-noconflict
+build/src-min-noconflict:
+	./Makefile.dryice.js -m --nc
+
+archive: $(TAR)
+$(TAR):
+	mkdir -p builds/
+	tar --create build/ | gzip -9 > $@
+
+clean_builds:
+	rm -rf builds/
+
+clean_ci:
+	rm -rf build/ builds/ node_modules/
+
 dist: clean build ace.tgz
